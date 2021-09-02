@@ -1,0 +1,33 @@
+{
+  "name": "unique-sdk",
+  "version": "1.0.0",
+  "description": "Unique API",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">= 14.0.0"
+  },
+  "resolutions": {
+    "typescript": "^4.3.5"
+  },
+  "author": "Unique Network <support@uniquenetwork.io>",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/UniqueNetwork/unique-sdk#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UniqueNetwork/unique-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/UniqueNetwork/unique-sdk/issues"
+  },
+  "devDependencies": {
+    "typescript": "^4.4.2"
+  },
+  "dependencies": {
+    "@polkadot/api": "5.7.1",
+    "@polkadot/types": "^5.7.1"
+  }
+}
