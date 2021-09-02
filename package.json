@@ -2,8 +2,7 @@
   "name": "unique-sdk",
   "version": "1.0.0",
   "description": "Unique API",
-  "main": "dist/index.js",
-  "typings": "dist/index.d.ts",
+  "main": "unique.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,6 +15,7 @@
   "author": "Unique Network <support@uniquenetwork.io>",
   "license": "Apache-2.0",
   "homepage": "https://github.com/UniqueNetwork/unique-sdk#readme",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/UniqueNetwork/unique-sdk.git"
@@ -28,6 +28,9 @@
   },
   "dependencies": {
     "@polkadot/api": "5.7.1",
-    "@polkadot/types": "^5.7.1"
+    "@polkadot/types": "^5.7.1",
+    "eslint": "^7.32.0",
+    "eslint-plugin-import": "^2.24.2",
+    "protobufjs": "^6.11.2"
   }
 }
