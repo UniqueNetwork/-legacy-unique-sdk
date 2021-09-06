@@ -9,12 +9,21 @@ import {ApiPromise, WsProvider} from '@polkadot/api'
  * @example
  *
  */
-async function connect(endpoint, rtt) {
+async function connect(endpoint, rtt = '') {
   const wsProvider = new WsProvider(endpoint)
-  const api = new ApiPromise({
-    provider: wsProvider,
-    types: rtt
-  })
+  let api = null;
+
+  if (rtt !== '') {
+    api = new ApiPromise({
+      provider: wsProvider,
+      types: rtt
+    })
+  } else {
+    api = new ApiPromise({
+      provider: wsProvider
+    })
+  }
+
   try {
     await api.isReady
     return api
