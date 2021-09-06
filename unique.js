@@ -5,6 +5,9 @@ import getToken from './getToken';
 import protoApi from './protoApi';
 import rtt from './runtime_types.json';
 import market from './market_metadata.json';
+import sendTransaction from './sendTransaction';
+import getAbi from './getAbi';
+import getContractInstanse from './getContractInstanse';
 
 /**
  * @since 1.0.0
@@ -18,8 +21,13 @@ class UniqueAPI {
   #seed = null;
   #signer = null;
   #api = null;
+  #abi = null;
   #endpoint = 'wss://testnet2.uniquenetwork.io'
   #protoApi = null;
+  #marketContractAddress = null;
+  #contractInstance = null;
+  #maxGas = 1000000000000;
+  #maxValue = 0;
 
   constructor() {
     this.#keyring = new Keyring({
@@ -59,6 +67,22 @@ class UniqueAPI {
   get signer() {
     return this.#signer;
   }
+
+  set marketContractAddress(contractAddress) {
+    this.#marketContractAddress = contractAddress;
+    if (this.#api) {
+      this.#abi = getAbi(this.#api, market);
+      this.#contractInstance = getContractInstanse(
+        this.#api,
+        this.#abi,
+        this.#marketContractAddress
+        );
+    }
+  }
+
+  get marketContractAddress() {
+    return this.#marketContractAddress;
+  }
   /**
    *
    */
@@ -93,6 +117,79 @@ class UniqueAPI {
       } else {
         throw new Error(`not found collecionId`);
       }
+  }
+  /**
+   *
+   * @param {*} transaction
+   * @returns
+   * @example
+   *
+   */
+  async sendTransaction(transaction) {
+    const unsub = await sendTransaction(
+      this.#api,
+      this.signer,
+      transaction,
+      ({ events = [], status }) => {
+        if (status == 'Ready') {
+          console.log(`Current tx status is Ready`)
+
+        } else if (JSON.parse(status).Broadcast) {
+          console.log(`Current tx status is Broadcast`)
+
+        } else if (status.isInBlock) {
+          console.log(`Transaction included at blockHash ${status.asInBlock}`)
+        } else if (status.isFinalized) {
+          console.log(`Transaction finalized at blockHash ${status.asFinalized}`)
+
+          let success = false;
+
+          events.forEach(
+            (
+              {
+                phase,
+                event: { data, method, section }
+              }
+            ) => {
+              console.log(`${phase}: ${section}.${method}:: ${data}`);
+              if (method == 'ExtrinsicSuccess') {
+                success = true;
+              }
+            }
+          );
+          unsub();
+        } else {
+          console.log(`Something went wrong with transaction. Status: ${status}`);
+          unsub();
+        }
+      });
+  }
+  /**
+   *
+   * @since 1.0.0
+   * @param {number} tokenId
+   * @examples
+   *
+   */
+  async cancelOnMarket(tokenId) {
+    if (typeof tokenId !== number) {
+      throw new TypeError('Expected a number');
+    }
+    const tx = this.#contractInstance.tx.cancel(
+      this.#maxValue,
+      this.#maxGas,
+      this.#collectionId,
+      tokenId);
+
+    await this.sendTransaction(tx);
+  }
+
+  async listOnMarket() {
+
+  }
+
+  async buyOnMarket() {
+
   }
 }
 

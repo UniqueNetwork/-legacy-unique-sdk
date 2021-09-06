@@ -10,6 +10,9 @@
  * // => { Owner, Mode, Access, Name, Description, TokenPrefix, MintMode }
  */
 async function collectionById(api, collectionId) {
+  if (typeof collectionById !== number) {
+    throw new TypeError('Expected a number');
+  }
   const collection = (await api.query.nft.collectionById(collectionId)).toJSON()
   return collection
 }
