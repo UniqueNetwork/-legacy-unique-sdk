@@ -8,6 +8,8 @@ import market from './market_metadata.json';
 import sendTransaction from './sendTransaction';
 import getAbi from './getAbi';
 import getContractInstanse from './getContractInstanse';
+import BigNumber from 'bignumber.js';
+import normalizeAccount from './.internal/normalizeAccount';
 
 /**
  * @since 1.0.0
@@ -28,6 +30,8 @@ class UniqueAPI {
   #contractInstance = null;
   #maxGas = 1000000000000;
   #maxValue = 0;
+  #quoteID = 2; // KSM
+  #escrowAddress = ''; //escrow
 
   constructor() {
     this.#keyring = new Keyring({
@@ -66,6 +70,14 @@ class UniqueAPI {
 
   get signer() {
     return this.#signer;
+  }
+
+  get escrowAddress() {
+    return this.#escrowAddress;
+  }
+
+  set escrowAddress(address = '') {
+    this.#escrowAddress = address;
   }
 
   set marketContractAddress(contractAddress) {
@@ -183,13 +195,37 @@ class UniqueAPI {
 
     await this.sendTransaction(tx);
   }
-
-  async listOnMarket() {
-
+  /**
+   *
+   * @param {number} tokenId
+   * @param {number} price
+   */
+  async listOnMarket(tokenId, price) {
+    if (typeof tokenId !== number && typeof price !== number) {
+      throw new TypeError('Exprected a number')
+    }
+    const priceBN = (new BigNumber(price)).times(1e12).integerValue(BigNumber.ROUND_UP)
+    const tx = this.#contractInstance.tx.ask(
+      this.#maxValue,
+      this.#maxGas,
+      this.#collectionId,
+      tokenId,
+      this.#quoteID,
+      priceBN.toString()
+    )
+    await this.sendTransaction(tx)
   }
-
-  async buyOnMarket() {
-
+  /**
+   *
+   * @param {number} tokenId
+   */
+  async buyOnMarket(tokenId) {
+    const tx = this.#api.tx.nft.transfer(
+      normalizeAccount(this.escrowAddress),
+      this.#collectionId,
+      tokenId,
+      0);
+    await this.sendTransaction(tx);
   }
 }
 
