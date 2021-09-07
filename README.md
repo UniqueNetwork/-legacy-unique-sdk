@@ -15,14 +15,15 @@ Get informantion by token
 
 ```
 
+  uniqueApi.escrowAddress = '5DACuDR8CXXmQS3tpGyrHZXoJ6ds7bjdRb4wVqqSt2CMfAoG'
+  uniqueApi.marketContractAddress = '5GPbxrVzvjRHUSQUS9BNUFe2Q4KVfsYZtG1CTRaqe51rNSAX';
+
 List token for sale
 ```js
   const uniqueApi = new UniqueAPI();
 
   await uniqueApi.init();
 
-  uniqueApi.escrowAddress = '5DACuDR8CXXmQS3tpGyrHZXoJ6ds7bjdRb4wVqqSt2CMfAoG'
-  uniqueApi.marketContractAddress = '5GPbxrVzvjRHUSQUS9BNUFe2Q4KVfsYZtG1CTRaqe51rNSAX';
   uniqueApi.seed = '';
   uniqueApi.signer = '';
 

@@ -8,8 +8,8 @@ import { Abi } from '@polkadot/api-contract'
  * @example
  *
  */
-function getAbi(api, marketContractAbi) {
-  return new Abi(api.registry, marketContractAbi);
+function getAbi(marketContractAbi) {
+  return new Abi(marketContractAbi);
 }
 
 export default getAbi

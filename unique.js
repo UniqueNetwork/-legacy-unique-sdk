@@ -5,11 +5,11 @@ import getToken from './getToken.js';
 import protoApi from './protoApi.js';
 import rtt from './runtime_types.json';
 import market from './market_metadata.json';
-import sendTransaction from './sendTransaction.js';
 import getAbi from './getAbi.js';
 import getContractInstanse from './getContractInstanse.js';
 import BigNumber from 'bignumber.js';
 import normalizeAccount from './.internal/normalizeAccount.js';
+import {web3FromAddress} from '@polkadot/extension-dapp';
 
 /**
  * @since 1.0.0
@@ -56,7 +56,7 @@ class UniqueAPI {
   }
 
   set seed(seed) {
-    this.#seed = this.#keyring.addFromUir(seed);
+    this.#seed = this.#keyring.addFromUri(seed);
   }
 
   get seed() {
@@ -82,7 +82,7 @@ class UniqueAPI {
   set marketContractAddress(contractAddress) {
     this.#marketContractAddress = contractAddress;
     if (this.#api) {
-      this.#abi = getAbi(this.#api, market);
+      this.#abi = getAbi(market);
       this.#contractInstance = getContractInstanse(
         this.#api,
         this.#abi,
@@ -147,7 +147,7 @@ class UniqueAPI {
   async sendTransaction(transaction) {
     const unsub = await sendTransaction(
       this.#api,
-      this.signer,
+      this.seed,
       transaction,
       ({ events = [], status }) => {
         if (status == 'Ready') {
@@ -160,8 +160,6 @@ class UniqueAPI {
           console.log(`Transaction included at blockHash ${status.asInBlock}`)
         } else if (status.isFinalized) {
           console.log(`Transaction finalized at blockHash ${status.asFinalized}`)
-
-          let success = false;
 
           events.forEach(
             (
@@ -208,9 +206,6 @@ class UniqueAPI {
    * @param {number} price
    */
   async listOnMarket(tokenId, price) {
-    if (typeof tokenId !== number && typeof price !== number) {
-      throw new TypeError('Exprected a number')
-    }
     const priceBN = (new BigNumber(price)).times(1e12).integerValue(BigNumber.ROUND_UP)
     const tx = this.#contractInstance.tx.ask(
       this.#maxValue,

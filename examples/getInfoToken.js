@@ -7,11 +7,8 @@ async function main() {
   await uniqueApi.init();
 
   uniqueApi.collectionId = 25;
-
-/*  uniqueApi.escrowAddress = '5DACuDR8CXXmQS3tpGyrHZXoJ6ds7bjdRb4wVqqSt2CMfAoG'
-  uniqueApi.marketContractAddress = '5GPbxrVzvjRHUSQUS9BNUFe2Q4KVfsYZtG1CTRaqe51rNSAX';
-  uniqueApi.seed = '';
-  uniqueApi.signer = '';*/
+  uniqueApi.seed = 'cash stomach master leisure glide slot innocent equal toddler pledge clean violin'
+  uniqueApi.signer = '5D4Ss8UfaiYCb8ojVbbKfuVjesUqUhA3NsM2zvcsmGgr3UPQ'
 
   await uniqueApi.updated();
 
