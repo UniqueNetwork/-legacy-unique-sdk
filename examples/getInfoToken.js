@@ -6,13 +6,11 @@ async function main() {
 
   await uniqueApi.init();
 
-  uniqueApi.collectionId = 25;
-  uniqueApi.seed = 'cash stomach master leisure glide slot innocent equal toddler pledge clean violin'
-  uniqueApi.signer = '5D4Ss8UfaiYCb8ojVbbKfuVjesUqUhA3NsM2zvcsmGgr3UPQ'
+  uniqueApi.collectionId = 112;
 
   await uniqueApi.updated();
 
-  const token = await uniqueApi.getNftProperties(52);
+  const token = await uniqueApi.getNftProperties(22);
 
   console.log(token);
 }

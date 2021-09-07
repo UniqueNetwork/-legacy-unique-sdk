@@ -137,6 +137,7 @@ class UniqueAPI {
         throw new Error(`not found collecionId`);
       }
   }
+
   /**
    *
    * @param {*} transaction
@@ -144,42 +145,44 @@ class UniqueAPI {
    * @example
    *
    */
-  async sendTransaction(transaction) {
-    const unsub = await sendTransaction(
-      this.#api,
-      this.seed,
-      transaction,
-      ({ events = [], status }) => {
-        if (status == 'Ready') {
-          console.log(`Current tx status is Ready`)
-
-        } else if (JSON.parse(status).Broadcast) {
-          console.log(`Current tx status is Broadcast`)
-
-        } else if (status.isInBlock) {
-          console.log(`Transaction included at blockHash ${status.asInBlock}`)
-        } else if (status.isFinalized) {
-          console.log(`Transaction finalized at blockHash ${status.asFinalized}`)
-
-          events.forEach(
-            (
-              {
-                phase,
-                event: { data, method, section }
-              }
-            ) => {
-              console.log(`${phase}: ${section}.${method}:: ${data}`);
-              if (method == 'ExtrinsicSuccess') {
-                success = true;
-              }
-            }
-          );
-          unsub();
-        } else {
-          console.log(`Something went wrong with transaction. Status: ${status}`);
-          unsub();
+  async sendTransaction(transaction, seed) {
+    const getTransactionStatus = (events, status) => {
+      if (status.isReady) {
+        return "NotReady";
+      }
+      if (status.isBroadcast) {
+        return "NotReady";
+      }
+      if (status.isInBlock || status.isFinalized) {
+        const errors = events.filter(e => e.event.data.method === 'ExtrinsicFailed');
+        if(errors.length > 0) {
+          console.log(`Transaction failed, ${errors}`, 'ERROR');
+          return "Fail";
         }
-      });
+        if(events.filter(e => e.event.data.method === 'ExtrinsicSuccess').length > 0) {
+          return "Success";
+        }
+      }
+    };
+    return new Promise(async function(resolve, reject) {
+      try {
+        let unsub = await transaction.signAndSend(seed, ({events = [], status}) => {
+          const transactionStatus = getTransactionStatus(events, status);
+
+          if (transactionStatus === "Success") {
+            console.log(`Transaction successful`);
+            resolve(events);
+            unsub();
+          } else if (transactionStatus === "Fail") {
+            console.log(`Something went wrong with transaction. Status: ${status}`);
+            reject(events);
+            unsub();
+          }
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
   }
   /**
    *
@@ -189,16 +192,13 @@ class UniqueAPI {
    *
    */
   async cancelOnMarket(tokenId) {
-    if (typeof tokenId !== number) {
-      throw new TypeError('Expected a number');
-    }
     const tx = this.#contractInstance.tx.cancel(
       this.#maxValue,
       this.#maxGas,
-      this.#collectionId,
+      this.collectionId,
       tokenId);
 
-    await this.sendTransaction(tx);
+    await this.sendTransaction(tx, this.seed);
   }
   /**
    *
@@ -210,12 +210,12 @@ class UniqueAPI {
     const tx = this.#contractInstance.tx.ask(
       this.#maxValue,
       this.#maxGas,
-      this.#collectionId,
+      this.collectionId,
       tokenId,
       this.#quoteID,
       priceBN.toString()
     )
-    await this.sendTransaction(tx)
+    await this.sendTransaction(tx, this.seed)
   }
   /**
    *
@@ -224,10 +224,10 @@ class UniqueAPI {
   async buyOnMarket(tokenId) {
     const tx = this.#api.tx.nft.transfer(
       normalizeAccount(this.escrowAddress),
-      this.#collectionId,
+      this.collectionId,
       tokenId,
       0);
-    await this.sendTransaction(tx);
+    await this.sendTransaction(tx, this.seed);
   }
 }
 

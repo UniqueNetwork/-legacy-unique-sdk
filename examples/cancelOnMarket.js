@@ -13,7 +13,7 @@ async function main() {
 
   uniqueApi.collectionId = 112
 
-  await uniqueApi.buyOnMarket(22);
+  await uniqueApi.cancelOnMarket(22);
 
 }
 

@@ -6,13 +6,14 @@ async function main() {
 
   await uniqueApi.init()
 
-  uniqueApi.marketContractAddress = '5GPbxrVzvjRHUSQUS9BNUFe2Q4KVfsYZtG1CTRaqe51rNSAX'
-  uniqueApi.seed = 'cash stomach master leisure glide slot innocent equal toddler pledge clean violin'
-  uniqueApi.signer = '5D4Ss8UfaiYCb8ojVbbKfuVjesUqUhA3NsM2zvcsmGgr3UPQ'
+  uniqueApi.marketContractAddress = '5GP...';
+  uniqueApi.escrowAddress = '5DACu...';
+  uniqueApi.seed = '//Alice'
+  uniqueApi.signer = '5D...'
 
   uniqueApi.collectionId = 112
 
-  await uniqueApi.listOnMarket(22, 0.4);
+  await uniqueApi.listOnMarket(22);
 
 }
 
