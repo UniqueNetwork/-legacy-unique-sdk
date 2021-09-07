@@ -1,15 +1,15 @@
 import { Keyring } from '@polkadot/api';
-import connect from './connect';
-import getOnChainSchema from './getOnChainSchema';
-import getToken from './getToken';
-import protoApi from './protoApi';
+import connect from './connect.js';
+import getOnChainSchema from './getOnChainSchema.js';
+import getToken from './getToken.js';
+import protoApi from './protoApi.js';
 import rtt from './runtime_types.json';
 import market from './market_metadata.json';
-import sendTransaction from './sendTransaction';
-import getAbi from './getAbi';
-import getContractInstanse from './getContractInstanse';
+import sendTransaction from './sendTransaction.js';
+import getAbi from './getAbi.js';
+import getContractInstanse from './getContractInstanse.js';
 import BigNumber from 'bignumber.js';
-import normalizeAccount from './.internal/normalizeAccount';
+import normalizeAccount from './.internal/normalizeAccount.js';
 
 /**
  * @since 1.0.0
@@ -17,7 +17,6 @@ import normalizeAccount from './.internal/normalizeAccount';
 class UniqueAPI {
 
   #keyring = null;
-  #endpoint = null;
   #onChainSchema = null;
   #collectionId = null;
   #seed = null;
@@ -127,8 +126,8 @@ class UniqueAPI {
    * @example
    *
    */
-  async getNftProperties(tokenId, collectionId = this.#collectionId) {
-      if (collectionId && this.#onChainSchema) {
+  async getNftProperties(tokenId) {
+      if (this.#collectionId && this.#onChainSchema) {
           const token = await getToken(this.#api, this.#collectionId, tokenId);
           return {
             owner: token.owner,

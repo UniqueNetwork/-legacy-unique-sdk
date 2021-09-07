@@ -1,5 +1,5 @@
-import parseHexToString from './.internal/parseHexToString'
-import collectionById from './collectionById'
+import parseHexToString from './.internal/parseHexToString.js'
+import collectionById from './collectionById.js'
 
 /**
  *

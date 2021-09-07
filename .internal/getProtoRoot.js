@@ -1,4 +1,4 @@
-import { Root } from 'protobufjs';
+import proto from 'protobufjs';
 
 /**
  *
@@ -19,7 +19,7 @@ function getProtoRoot(nestedData) {
       }
     };
   }
-  return Root.fromJSON(nestedData);
+  return proto.Root.fromJSON(nestedData);
 }
 
 export default getProtoRoot

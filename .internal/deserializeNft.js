@@ -1,4 +1,4 @@
-import convertEnumToString from "./convertEnumToString";
+import convertEnumToString from "./convertEnumToString.js";
 
 /**
  *

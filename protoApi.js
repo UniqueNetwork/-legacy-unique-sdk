@@ -1,6 +1,6 @@
-import deserializeNft from "./.internal/deserializeNft"
-import getProtoRoot from "./.internal/getProtoRoot"
-import serializeNft from "./.internal/serializeNft"
+import deserializeNft from "./.internal/deserializeNft.js"
+import getProtoRoot from "./.internal/getProtoRoot.js"
+import serializeNft from "./.internal/serializeNft.js"
 
 /**
  * @since 1.0.0

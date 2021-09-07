@@ -1,4 +1,4 @@
-import hexToBuffer from "./.internal/hexToBuffer";
+import hexToBuffer from "./.internal/hexToBuffer.js";
 
 /**
  *
