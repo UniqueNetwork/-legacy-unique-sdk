@@ -95,6 +95,14 @@ class UniqueAPI {
   get marketContractAddress() {
     return this.#marketContractAddress;
   }
+
+  get api() {
+    return this.#api;
+  }
+
+  get contractInstance() {
+    return this.#contractInstance;
+  }
   /**
    *
    */
