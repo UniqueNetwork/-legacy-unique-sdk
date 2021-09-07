@@ -1,34 +1,65 @@
 # Unique SDK
 
 
-Get informantion by token
+## buyOnMarket
+
 ```js
-  const uniqueApi = new UniqueAPI();
+  const uniqueApi = new UniqueAPI()
 
-  await uniqueApi.init();
+  await uniqueApi.init()
 
-  uniqueApi.collectionId = 25;
+  uniqueApi.marketContractAddress = '5GPbx...';
+  uniqueApi.escrowAddress = '5DAC...';
+  uniqueApi.seed = '//Alice'
+  uniqueApi.signer = '5D4S...'
 
-  await uniqueApi.updated();
+  uniqueApi.collectionId = 112
 
-  const token = await uniqueApi.getNftProperties(52);
-
+  await uniqueApi.buyOnMarket(22);
 ```
 
-  uniqueApi.escrowAddress = '5DACuDR8CXXmQS3tpGyrHZXoJ6ds7bjdRb4wVqqSt2CMfAoG'
-  uniqueApi.marketContractAddress = '5GPbxrVzvjRHUSQUS9BNUFe2Q4KVfsYZtG1CTRaqe51rNSAX';
+## cancelOnMarket
+```js
+  const uniqueApi = new UniqueAPI()
 
-List token for sale
+  await uniqueApi.init()
+
+  uniqueApi.marketContractAddress = '5GPbx...';
+  uniqueApi.escrowAddress = '5DAC...';
+  uniqueApi.seed = '//Alice'
+  uniqueApi.signer = '5D4S...'
+
+  uniqueApi.collectionId = 112
+
+  await uniqueApi.cancelOnMarket(22);
+```
+## get token
 ```js
   const uniqueApi = new UniqueAPI();
 
   await uniqueApi.init();
 
-  uniqueApi.seed = '';
-  uniqueApi.signer = '';
+  uniqueApi.collectionId = 112;
 
   await uniqueApi.updated();
 
-  await uniqueApi.listOnMarket()
+  const token = await uniqueApi.getNftProperties(22);
 
+  console.log(token);
+```
+
+## listOnMarket
+```js
+const uniqueApi = new UniqueAPI()
+
+await uniqueApi.init()
+
+uniqueApi.marketContractAddress = '5GP...';
+uniqueApi.escrowAddress = '5DACu...';
+uniqueApi.seed = '//Alice'
+uniqueApi.signer = '5D...'
+
+uniqueApi.collectionId = 112
+
+await uniqueApi.listOnMarket(22);
 ```
