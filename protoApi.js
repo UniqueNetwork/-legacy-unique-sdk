@@ -16,12 +16,9 @@ class protoApi {
    *
    */
   constructor(nestedData) {
-    this.#nestedData = this.#getProtoRoot(nestedData)
+    this.#nestedData = getProtoRoot(nestedData)
   }
 
-  #getProtoRoot(nestedData) {
-    return getProtoRoot(nestedData)
-  }
   /**
    *
    * @param {Object} payload

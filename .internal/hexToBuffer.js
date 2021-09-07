@@ -7,11 +7,7 @@
  *
  */
 function hexToBuffer(value) {
-  if (value instanceof String) {
-    return Buffer(value.replace('0x',''), 'hex');
-  } else {
-    return value;
-  }
+  return Buffer(value.replace('0x',''), 'hex');
 }
 
 export default hexToBuffer;

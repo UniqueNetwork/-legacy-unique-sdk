@@ -5,7 +5,7 @@
  * @returns {string}
  * @example
  */
-function convertEnumToString({value, key, NFTMeta, locale}) {
+function convertEnumToString(value, key, NFTMeta, locale) {
   let result = value;
 
   try {
