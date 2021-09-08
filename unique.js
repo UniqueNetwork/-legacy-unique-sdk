@@ -145,7 +145,7 @@ class UniqueAPI {
    * @example
    *
    */
-  async sendTransaction(transaction, sender) {
+  async sendTransaction(transaction, sender, signer) {
 
     const getTransactionStatus = (events, status) => {
       if (status.isReady) {
@@ -167,8 +167,8 @@ class UniqueAPI {
     };
     return new Promise(async function(resolve, reject) {
       try {
-        const injector = await web3FromAddress(sender);
-        let unsub = await transaction.signAndSend(sender, {signer: injector.signer} , ({events = [], status}) => {
+        const injector = await web3FromAddress(signer);
+        let unsub = await transaction.signAndSend(signer, {signer: injector.signer} , ({events = [], status}) => {
           const transactionStatus = getTransactionStatus(events, status);
 
           if (transactionStatus === "Success") {
@@ -200,7 +200,7 @@ class UniqueAPI {
       this.collectionId,
       tokenId);
 
-    await this.sendTransaction(tx,  this.address);
+    await this.sendTransaction(tx,  this.seed, this.signer);
   }
   /**
    *
@@ -217,7 +217,7 @@ class UniqueAPI {
       this.#quoteID,
       priceBN.toString()
     )
-    await this.sendTransaction(tx,  this.signer)
+    await this.sendTransaction(tx,  this.seed, this.signer)
   }
   /**
    *
@@ -229,7 +229,7 @@ class UniqueAPI {
       this.collectionId,
       tokenId,
       0);
-    await this.sendTransaction(tx, this.signer);
+    await this.sendTransaction(tx, this.seed, this.signer);
   }
 }
 
