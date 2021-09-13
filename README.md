@@ -2,7 +2,7 @@
 
 
 ## buyOnMarket
-Покупка токенов
+Buy Tokens / Покупка токенов
 ```js
   const uniqueApi = new UniqueAPI() // Вызов библиотеки
 
@@ -19,7 +19,7 @@
 ```
 
 ## cancelOnMarket
-Отмена продажи токена
+Cancel Token Sale / Отмена продажи токена
 ```js
   const uniqueApi = new UniqueAPI()  // Вызов библиотеки
 
@@ -35,7 +35,7 @@
   await uniqueApi.cancelOnMarket(22); //Отмены продажи
 ```
 ## get token
-Получения информации об токене
+Get Token Information / Получения информации об токене
 ```js
     const uniqueApi = new UniqueAPI()  // Вызов библиотеки
 
@@ -51,7 +51,7 @@
 ```
 
 ## listOnMarket
-Выставления на продажу токен
+List Token Sale / Выставления на продажу токен
 ```js
   const uniqueApi = new UniqueAPI()  // Вызов библиотеки
 
