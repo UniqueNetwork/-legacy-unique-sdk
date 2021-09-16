@@ -1,0 +1,28 @@
+{
+  "entrypoints": [
+    "polkadot.01.ab89414a.js",
+    "other.00.6858ef7c.js",
+    "polkadot.02.22a4727d.js",
+    "other.02.17bd070a.js",
+    "polkadot.00.60f4d152.js",
+    "other.01.201b91b3.js",
+    "main.567e7a72.js"
+  ],
+  "files": {
+    "main.js": "main.567e7a72.js",
+    "polkadot.01.js": "polkadot.01.ab89414a.js",
+    "other.00.js": "other.00.6858ef7c.js",
+    "polkadot.02.js": "polkadot.02.22a4727d.js",
+    "other.02.js": "other.02.17bd070a.js",
+    "polkadot.00.js": "polkadot.00.60f4d152.js",
+    "other.01.js": "other.01.201b91b3.js",
+    "favicon.ico": "favicon.ico",
+    "theme.css": "theme.css",
+    "index.html": "index.html",
+    "manifest.json": "manifest.json",
+    "locales/index.json": "locales/index.json",
+    "locales/en/apps.json": "locales/en/apps.json",
+    "locales/en/index.json": "locales/en/index.json",
+    "locales/en/translation.json": "locales/en/translation.json"
+  }
+}
