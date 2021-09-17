@@ -351,20 +351,20 @@ class UniqueAPI {
     return true;
   }
 
-  async buyOnMarket (tokenId: string) {
+  async buyOnMarket (tokenId: string, amountBN: number) {
     try {
       if (!this._api) {
         return;
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-      const tx = this._api.tx.nft.transfer(
-        this._escrowAddress,
-        this._collectionId,
-        tokenId,
-        0);
+      const totalBalanceObj = await this._api.query.system.account(this._signer);
+      const totalBalance = new BigNumber(totalBalanceObj.data.free);
+
+      const tx = await this._api.tx.balances.transfer(this._signer, new BigNumber(amountBN).toString());
 
       await this.sendTransaction(tx, this._seed, this._signer);
+
+      await this.sendToEscrow(tokenId);
     } catch (error) {
       console.error(error);
     }

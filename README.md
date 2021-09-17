@@ -30,7 +30,7 @@
       uniqueApi.signer = '5D4....'
       uniqueApi.collectionId = 112
       await uniqueApi.connect()
-      await uniqueApi.buyOnMarket(53)
+      await uniqueApi.buyOnMarket(53, 2)
     }
     main()
 ```
