@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable header/header */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 // Copyright 2017-2021 UseTech authors & contributors
@@ -7,7 +10,7 @@ import type { Abi, ContractPromise } from '@polkadot/api-contract';
 import type { KeyringPair } from '@polkadot/keyring/types';
 
 import { Keyring } from '@polkadot/api';
-import { web3FromAddress } from '@polkadot/extension-dapp';
+import { web3Accounts, web3Enable, web3FromAddress } from '@polkadot/extension-dapp';
 
 import BigNumber from './bignumber.js';
 import connect from './connect';
@@ -104,15 +107,6 @@ class UniqueAPI {
 
   set marketContractAddress (contractAddress) {
     this._marketContractAddress = contractAddress;
-
-    if (this._api) {
-      this._abi = getAbi(market);
-      this._contractInstance = getContractInstance(
-        this._api,
-        this._abi,
-        this._marketContractAddress
-      );
-    }
   }
 
   get marketContractAddress () {
@@ -131,8 +125,7 @@ class UniqueAPI {
   /**
    *
    */
-  async connect (endpoint: string) {
-    this._endpoint = endpoint;
+  async connect () {
     this._api = await connect(this._endpoint, rtt);
   }
 
@@ -192,6 +185,8 @@ class UniqueAPI {
     if (collectionId && tokenId) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       this._onChainSchema = await getOnChainSchema(this._api, collectionId);
+      console.log('_onChainSchema', this._onChainSchema);
+      this._protoApi = new ProtoApi(this._onChainSchema);
 
       const token = await getToken(this._api, collectionId, tokenId);
 
@@ -246,7 +241,20 @@ class UniqueAPI {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises,no-async-promise-executor
     return new Promise(async function (resolve, reject) {
       try {
+        const extensions = await web3Enable('polkadot-js/apps');
+
+        if (extensions.length === 0) {
+          throw new Error('no extension installed, or the user did not accept the authorization');
+        }
+
+        const allAccounts = await web3Accounts();
+
+        if (allAccounts.length === 0) {
+          throw new Error('no account');
+        }
+
         const injector = await web3FromAddress(signer);
+
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
         const unsub = await transaction.signAndSend(signer, { signer: injector.signer }, ({ events = [], status }: { events: any[], status: string }) => {
           const transactionStatus = getTransactionStatus(events, status);
@@ -270,6 +278,13 @@ class UniqueAPI {
   }
 
   async cancelOnMarket (tokenId: string) {
+    this._abi = getAbi(market);
+    this._contractInstance = getContractInstance(
+      this._api,
+      this._abi,
+      this._marketContractAddress
+    );
+
     if (this._contractInstance) {
       const tx = this._contractInstance.tx.cancel(
         this._maxValue,
@@ -282,32 +297,77 @@ class UniqueAPI {
   }
 
   async listOnMarket (tokenId: string, price: number) {
-    const priceBN = (new BigNumber(price)).times(1e12).integerValue(BigNumber.ROUND_UP);
-    const tx = this._contractInstance?.tx?.ask(
-      this._maxValue,
-      this._maxGas,
-      this._collectionId,
-      tokenId,
-      this._quoteID,
-      priceBN.toString()
-    );
+    try {
+      const priceBN = (new BigNumber(price)).times(1e12).integerValue(BigNumber.ROUND_UP);
 
-    await this.sendTransaction(tx, this.seed, this.signer);
+      this._abi = getAbi(market);
+      this._contractInstance = getContractInstance(
+        this._api,
+        this._abi,
+        this._marketContractAddress
+      );
+
+      if (this._contractInstance) {
+        const sendEscrow: boolean = await this.sendToEscrow(tokenId);
+
+        if (sendEscrow) {
+          const tx = this._contractInstance.tx.ask(
+            this._maxValue,
+            this._maxGas,
+            this._collectionId,
+            tokenId,
+            this._quoteID,
+            priceBN.toString()
+          );
+
+          await this.sendTransaction(tx, this.seed, this.signer);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async sendToEscrow (tokenId: string): Promise<boolean> {
+    try {
+      if (!this._api) {
+        return false;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+      const tx = this._api.tx.nft.transfer(
+        this._escrowAddress,
+        this._collectionId,
+        tokenId,
+        0);
+
+      await this.sendTransaction(tx, this._seed, this._signer);
+    } catch (error) {
+      console.error(error);
+
+      return false;
+    }
+
+    return true;
   }
 
   async buyOnMarket (tokenId: string) {
-    if (!this._api) {
-      return;
+    try {
+      if (!this._api) {
+        return;
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+      const tx = this._api.tx.nft.transfer(
+        this._escrowAddress,
+        this._collectionId,
+        tokenId,
+        0);
+
+      await this.sendTransaction(tx, this._seed, this._signer);
+    } catch (error) {
+      console.error(error);
     }
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-    const tx = this._api.tx.nft.transfer(
-      this._escrowAddress,
-      this._collectionId,
-      tokenId,
-      0);
-
-    await this.sendTransaction(tx, this._seed, this._signer);
   }
 }
 
