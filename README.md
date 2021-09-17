@@ -1,5 +1,21 @@
 # Unique SDK
 
+## Сборка проекта:
+
+### Установка зависимостей
+```bash
+yarn install
+```
+
+### Разработк
+```bash
+yarn run start
+```
+
+### Cборка
+```bash
+yarn run build
+```
 
 ## buyOnMarket
 Покупка токенов
