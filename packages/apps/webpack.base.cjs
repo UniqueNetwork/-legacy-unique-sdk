@@ -9,7 +9,6 @@ const webpack = require('webpack');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const { WebpackManifestPlugin } = require('webpack-manifest-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const Dotenv = require('dotenv-webpack');
 
 const findPackages = require('../../scripts/findPackages.cjs');
 
@@ -39,31 +38,9 @@ function createWebpack (context, mode = 'production') {
   return {
     context,
     entry: ['@babel/polyfill', './src/index.ts'],
-    mode,
+    mode: 'production',
     module: {
       rules: [
-        {
-          exclude: /(node_modules)/,
-          test: /\.(s[ac]|c)ss$/,
-          use: [
-            mode === 'production' ? MiniCssExtractPlugin.loader : require.resolve('style-loader'),
-            {
-              loader: require.resolve('css-loader'),
-              options: {
-                importLoaders: 1
-              }
-            },
-            'sass-loader'
-          ]
-        },
-        {
-          include: /node_modules/,
-          test: /\.css$/,
-          use: [
-            MiniCssExtractPlugin.loader,
-            require.resolve('css-loader')
-          ]
-        },
         {
           exclude: /(node_modules)/,
           test: /\.(js|mjs|ts|tsx)$/,
@@ -81,42 +58,6 @@ function createWebpack (context, mode = 'production') {
             require.resolve('html-loader'),
             require.resolve('markdown-loader')
           ]
-        },
-        {
-          exclude: [/semantic-ui-css/],
-          test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
-          use: [
-            {
-              loader: require.resolve('url-loader'),
-              options: {
-                esModule: false,
-                limit: 10000,
-                name: 'static/[name].[contenthash:8].[ext]'
-              }
-            }
-          ]
-        },
-        {
-          exclude: [/semantic-ui-css/],
-          test: [/\.eot$/, /\.ttf$/, /\.svg$/, /\.woff$/, /\.woff2$/],
-          use: [
-            {
-              loader: require.resolve('file-loader'),
-              options: {
-                esModule: false,
-                name: 'static/[name].[contenthash:8].[ext]'
-              }
-            }
-          ]
-        },
-        {
-          include: [/semantic-ui-css/],
-          test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/, /\.eot$/, /\.ttf$/, /\.svg$/, /\.woff$/, /\.woff2$/],
-          use: [
-            {
-              loader: require.resolve('null-loader')
-            }
-          ]
         }
       ]
     },
@@ -128,19 +69,10 @@ function createWebpack (context, mode = 'production') {
       minimize: mode === 'production',
       splitChunks: {
         cacheGroups: {
-          ...mapChunks('robohash', [
-            /* 00 */ /RoboHash\/(backgrounds|sets\/set1)/,
-            /* 01 */ /RoboHash\/sets\/set(2|3)/,
-            /* 02 */ /RoboHash\/sets\/set(4|5)/
-          ]),
           ...mapChunks('polkadot', [
             /* 00 */ /node_modules\/@polkadot\/(wasm)/,
             /* 01 */ /node_modules\/(@polkadot\/(api|metadata|rpc|types))/,
             /* 02 */ /node_modules\/(@polkadot\/(extension|keyring|networks|react|ui|util|vanitygen|x-)|@acala-network|@edgeware|@laminar|@ledgerhq|@open-web3|@sora-substrate|@subsocial|@zondax|edgeware)/
-          ]),
-          ...mapChunks('react', [
-            /* 00 */ /node_modules\/(@fortawesome)/,
-            /* 01 */ /node_modules\/(@emotion|@semantic-ui-react|@stardust|classnames|chart\.js|codeflask|copy-to-clipboard|file-selector|file-saver|hoist-non-react|i18next|jdenticon|keyboard-key|mini-create-react|popper\.js|prop-types|qrcode-generator|react|remark-parse|semantic-ui|styled-components)/
           ]),
           ...mapChunks('other', [
             /* 00 */ /node_modules\/(@babel|ansi-styles|asn1|browserify|buffer|history|html-parse|inherit|lodash|object|path-|parse-asn1|pbkdf2|process|public-encrypt|query-string|readable-stream|regenerator-runtime|repeat|rtcpeerconnection-shim|safe-buffer|stream-browserify|store|tslib|unified|unist-util|util|vfile|vm-browserify|webrtc-adapter|whatwg-fetch)/,
@@ -165,16 +97,6 @@ function createWebpack (context, mode = 'production') {
         Buffer: ['buffer', 'Buffer'],
         process: 'process/browser.js'
       }),
-      new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
-      new Dotenv({ defaults: true, path: './.env', systemvars: true }),
-      new webpack.DefinePlugin({
-        'process.env.NODE_ENV': JSON.stringify(mode),
-        'process.env.VERSION': JSON.stringify(pkgJson.version)
-      }),
-      new webpack.optimize.SplitChunksPlugin(),
-      new MiniCssExtractPlugin({
-        filename: '[name].[contenthash:8].css'
-      }),
       new WebpackManifestPlugin({
         fileName: 'asset-manifest.json',
         generate: (seed, files, entrypoints) => {
@@ -195,8 +117,7 @@ function createWebpack (context, mode = 'production') {
     ].concat(plugins),
     resolve: {
       alias: {
-        ...alias,
-        'react/jsx-runtime': require.resolve('react/jsx-runtime')
+        ...alias
       },
       extensions: ['.js', '.jsx', '.mjs', '.ts', '.tsx'],
       fallback: {

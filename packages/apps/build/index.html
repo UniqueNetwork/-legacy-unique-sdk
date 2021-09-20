@@ -1,3 +1,39 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="theme-color" content="#000000"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="manifest" href="manifest.json"><link rel="stylesheet" href="theme.css"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><script>if (window.self !== window.top) {
-        window.top.location.href = window.location.href;
-      }</script><script src="polkadot.01.ab89414a.js"></script><script src="other.00.6858ef7c.js"></script><script src="polkadot.02.22a4727d.js"></script><script src="other.02.17bd070a.js"></script><script src="polkadot.00.60f4d152.js"></script><script src="other.01.201b91b3.js"></script><script src="main.567e7a72.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="theme-color" content="#000000">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="theme.css">
+</head>
+
+<body><noscript>You need to enable JavaScript to run this app.</noscript>
+  <script>if (window.self !== window.top) {
+      window.top.location.href = window.location.href;
+    }</script>
+  <script src="other.01.bb10321e.js"></script>
+  <script src="polkadot.01.78b13119.js"></script>
+  <script src="polkadot.02.8ef3c4e1.js"></script>
+  <script src="other.00.8de09d6a.js"></script>
+  <script src="other.02.17bd070a.js"></script>
+  <script src="polkadot.00.60f4d152.js"></script>
+  <script src="main.dfb20f5f.js"></script>
+  <script>
+    async function main() {
+      const uniqueApi = new UniqueAPI({
+        endPoint: 'wss://testnet2.uniquenetwork.io'
+      })
+      uniqueApi.marketContractAddress = '5GPbxrVzvjRHUSQUS9BNUFe2Q4KVfsYZtG1CTRaqe51rNSAX'
+      uniqueApi.escrowAddress = '5DACuDR8CXXmQS3tpGyrHZXoJ6ds7bjdRb4wVqqSt2CMfAoG'
+      uniqueApi.signer = '5D4Ss8UfaiYCb8ojVbbKfuVjesUqUhA3NsM2zvcsmGgr3UPQ'
+      uniqueApi.collectionId = 112
+      await uniqueApi.connect()
+      await uniqueApi.listOnMarket(53, 2)
+    }
+    main()
+  </script>
+</body>
+
+</html>
