@@ -18,7 +18,7 @@ yarn run build
 ```
 
 ## buyOnMarket
-Покупка токенов
+Buy Tokens / Покупка токенов
 ```js
   const uniqueApi = new UniqueAPI() // Вызов библиотеки
 
@@ -35,7 +35,7 @@ yarn run build
 ```
 
 ## cancelOnMarket
-Отмена продажи токена
+Cancel Token Sale / Отмена продажи токена
 ```js
     async function main() {
       const uniqueApi = new UniqueAPI({
@@ -51,7 +51,7 @@ yarn run build
     main()
 ```
 ## get token
-Получения информации об токене
+Get Token Information / Получения информации об токене
 ```js
     async function main() {
       const uniqueApi = new UniqueAPI({
@@ -65,7 +65,7 @@ yarn run build
 ```
 
 ## listOnMarket
-Выставления на продажу токен
+List Token Sale / Выставления на продажу токен
 ```js
     async function main() {
       const uniqueApi = new UniqueAPI({
