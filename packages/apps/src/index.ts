@@ -204,7 +204,68 @@ class UniqueAPI {
 
   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
-  async sendTransaction (transaction, sender, signer) {
+  async sendTransactionSeed (transaction, seed) {
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    const getTransactionStatus = (events, status) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (status.isReady) {
+        return 'NotReady';
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (status.isBroadcast) {
+        return 'NotReady';
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (status.isInBlock || status.isFinalized) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+        const errors = events.filter((e: { event: { data: { method: string; }; }; }) => e.event.data.method === 'ExtrinsicFailed');
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        if (errors.length > 0) {
+          // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+          console.log(`Transaction failed, ${errors}`, 'ERROR');
+
+          return 'Fail';
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+        if (events.filter((e: { event: { data: { method: string; }; }; }) => e.event.data.method === 'ExtrinsicSuccess').length > 0) {
+          return 'Success';
+        }
+      }
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises,no-async-promise-executor
+    return new Promise(async function (resolve, reject) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+        const unsub = await transaction.signAndSend(seed, ({ events = [], status }: { events: any[], status: string }) => {
+          const transactionStatus = getTransactionStatus(events, status);
+
+          if (transactionStatus === 'Success') {
+            console.log('Transaction successful');
+            resolve(events);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            unsub();
+          } else if (transactionStatus === 'Fail') {
+            console.log(`Something went wrong with transaction. Status: ${status}`);
+            reject(events);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            unsub();
+          }
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  async sendTransactionSigner (transaction, signer) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const getTransactionStatus = (events, status) => {
@@ -292,7 +353,11 @@ class UniqueAPI {
         this._collectionId,
         tokenId);
 
-      await this.sendTransaction(tx, this._seed, this._signer);
+      if (this._seed) {
+        await this.sendTransactionSeed(tx, this._seed);
+      } else {
+        await this.sendTransactionSigner(tx, this._signer);
+      }
     }
   }
 
@@ -320,7 +385,11 @@ class UniqueAPI {
             priceBN.toString()
           );
 
-          await this.sendTransaction(tx, this.seed, this.signer);
+          if (this._seed) {
+            await this.sendTransactionSeed(tx, this._seed);
+          } else {
+            await this.sendTransactionSigner(tx, this._signer);
+          }
         }
       }
     } catch (error) {
@@ -341,7 +410,11 @@ class UniqueAPI {
         tokenId,
         0);
 
-      await this.sendTransaction(tx, this._seed, this._signer);
+      if (this._seed) {
+        await this.sendTransactionSeed(tx, this._seed);
+      } else {
+        await this.sendTransactionSigner(tx, this._signer);
+      }
     } catch (error) {
       console.error(error);
 
@@ -351,18 +424,26 @@ class UniqueAPI {
     return true;
   }
 
-  async buyOnMarket (tokenId: string, amountBN: number) {
+  async buyOnMarket (tokenId: string) {
     try {
       if (!this._api) {
         return;
       }
 
-      const totalBalanceObj = await this._api.query.system.account(this._signer);
-      const totalBalance = new BigNumber(totalBalanceObj.data.free);
+      const tx = this._api.tx.balances.transfer(this._escrowAddress, (new BigNumber('50000000000000000')).toString(), this._signer);
 
-      const tx = await this._api.tx.balances.transfer(this._signer, new BigNumber(amountBN).toString());
+      if (this._seed) {
+        await this.sendTransactionSeed(tx, this._seed);
+      } else {
+        await this.sendTransactionSigner(tx, this._signer);
+      }
+      /* const tx = await this._api.tx.balances.transfer(this._signer, new BigNumber(amountBN).toString());
 
-      await this.sendTransaction(tx, this._seed, this._signer);
+      if (this._seed) {
+        await this.sendTransactionSeed(tx, this._seed);
+      } else {
+        await this.sendTransactionSigner(tx, this._signer);
+      } */
 
       await this.sendToEscrow(tokenId);
     } catch (error) {

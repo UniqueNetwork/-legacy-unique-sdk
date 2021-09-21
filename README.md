@@ -7,7 +7,7 @@
 yarn install
 ```
 
-### Разработк
+### Разработка
 ```bash
 yarn run start
 ```
