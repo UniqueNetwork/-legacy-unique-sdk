@@ -80,3 +80,19 @@ yarn run build
     }
     main()
 ```
+### getMarketPrice
+```js
+    async function main() {
+      const uniqueApi = new UniqueAPI({
+        endPoint: 'wss://testnet2.uniquenetwork.io'
+      })
+      uniqueApi.marketContractAddress = '5GPbxrVzvjRHUSQUS9BNUFe2Q4KVfsYZtG1CTRaqe51rNSAX'
+      uniqueApi.escrowAddress = '5DACuDR8CXXmQS3tpGyrHZXoJ6ds7bjdRb4wVqqSt2CMfAoG'
+      uniqueApi.signer = '5F9u...'
+      uniqueApi.collectionId = 112
+      await uniqueApi.connect()
+      const price = await uniqueApi.getMarketPrice(53, '5D4Ss8...')
+      console.log(price)
+    }
+    main()
+```

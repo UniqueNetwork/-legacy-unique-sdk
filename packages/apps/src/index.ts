@@ -149,36 +149,35 @@ class UniqueAPI {
    * @return {{ owner: string, price: BN }} {}
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getMarketPrice (collectionId: string, tokenId: string, matcherContract: string) {
-    /* this code is from marketplace
-    const jsonAbi = new Abi(metadata, api.registry.getChainProperties());
-    const newContractInstance = new ContractPromise(api, jsonAbi, contractAddress);
+  async getMarketPrice (tokenId: string, matcherContract: string): Promise<any> {
+    this._abi = getAbi(market);
+    this._contractInstance = getContractInstance(
+      this._api,
+      this._abi,
+      this._marketContractAddress
+    );
 
-    if (contractInstance) {
-      const askIdResult = await contractInstance.query.getAskIdByToken(contractAddress, { gasLimit: maxGas, value }, collectionId, tokenId) as unknown as { output: BN };
+    const askIdResult: any = await this._contractInstance.query.getAskIdByToken(matcherContract, { gasLimit: this._maxGas, value: this._maxValue }, this._collectionId, tokenId);
 
-      if (askIdResult.output) {
-        const askId = askIdResult.output.toNumber();
+    if (askIdResult.output) {
+      const askId = askIdResult.output.toNumber();
 
-        if (askId !== 0) {
-          const askResult = await contractInstance.query.getAskById(contractAddress, { gasLimit: maxGas, value }, askId) as unknown as AskOutputInterface;
+      if (askId !== 0) {
+        const askResult: any = await this._contractInstance.query.getAskById(matcherContract, { gasLimit: this._maxGas, value: this._maxValue }, askId);
 
-          if (askResult.output) {
-            const askOwnerAddress = keyring.encodeAddress(askResult.output[4].toString());
+        if (askResult.output) {
+          const askOwnerAddress = this._keyring.encodeAddress(askResult.output[4].toString());
+          const ask = {
+            owner: askOwnerAddress,
+            price: askResult.output[3]
+          };
 
-            const ask = {
-              owner: askOwnerAddress,
-              price: askResult.output[3]
-            };
-
-            setTokenAsk(ask);
-
-            return ask;
-          }
+          return ask;
         }
       }
     }
-     */
+
+    return null;
   }
 
   async getNftProperties (collectionId: string, tokenId: string) {
