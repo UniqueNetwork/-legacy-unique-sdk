@@ -9,6 +9,8 @@
 import type { Abi, ContractPromise } from '@polkadot/api-contract';
 import type { KeyringPair } from '@polkadot/keyring/types';
 
+import BN from 'bn.js';
+
 import { Keyring } from '@polkadot/api';
 import { web3Accounts, web3Enable, web3FromAddress } from '@polkadot/extension-dapp';
 
@@ -42,6 +44,7 @@ class UniqueAPI {
   private _maxValue: number;
   private _quoteID: number;
   private _escrowAddress: string;
+  private _commission: number;
 
   constructor ({ endPoint, escrowAddress, marketContractAddress, maxGas, maxValue, quoteID }: { endPoint?: string, escrowAddress: string, marketContractAddress: string, maxGas?: number, maxValue: number, quoteID: number }) {
     this._keyring = new Keyring({
@@ -54,6 +57,7 @@ class UniqueAPI {
     this._quoteID = quoteID || 2; // KSM
     this._escrowAddress = escrowAddress;
     this._marketContractAddress = marketContractAddress;
+    this._commission = 10;
 
     return this;
   }
@@ -149,7 +153,7 @@ class UniqueAPI {
    * @return {{ owner: string, price: BN }} {}
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getMarketPrice (tokenId: string, matcherContract: string): Promise<any> {
+  async getMarketPrice (tokenId: string, matcherContract: string = this._escrowAddress): Promise<any> {
     this._abi = getAbi(market);
     this._contractInstance = getContractInstance(
       this._api,
@@ -180,7 +184,7 @@ class UniqueAPI {
     return null;
   }
 
-  async getNftProperties (collectionId: string, tokenId: string) {
+  async getNftProperties (tokenId: string, collectionId = this._collectionId) {
     if (collectionId && tokenId) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       this._onChainSchema = await getOnChainSchema(this._api, collectionId);
@@ -337,7 +341,7 @@ class UniqueAPI {
     });
   }
 
-  async cancelOnMarket (tokenId: string) {
+  async cancelOnMarket (tokenId: string, collectionID = this._collectionId) {
     this._abi = getAbi(market);
     this._contractInstance = getContractInstance(
       this._api,
@@ -349,7 +353,7 @@ class UniqueAPI {
       const tx = this._contractInstance.tx.cancel(
         this._maxValue,
         this._maxGas,
-        this._collectionId,
+        collectionID,
         tokenId);
 
       if (this._seed) {
@@ -360,7 +364,7 @@ class UniqueAPI {
     }
   }
 
-  async listOnMarket (tokenId: string, price: number) {
+  async listOnMarket (tokenId: string, price: number, collectionID = this._collectionId) {
     try {
       const priceBN = (new BigNumber(price)).times(1e12).integerValue(BigNumber.ROUND_UP);
 
@@ -378,7 +382,7 @@ class UniqueAPI {
           const tx = this._contractInstance.tx.ask(
             this._maxValue,
             this._maxGas,
-            this._collectionId,
+            collectionID,
             tokenId,
             this._quoteID,
             priceBN.toString()
@@ -396,7 +400,7 @@ class UniqueAPI {
     }
   }
 
-  async sendToEscrow (tokenId: string): Promise<boolean> {
+  async sendToEscrow (tokenId: string, collectionID = this._collectionId): Promise<boolean> {
     try {
       if (!this._api) {
         return false;
@@ -405,7 +409,7 @@ class UniqueAPI {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
       const tx = this._api.tx.nft.transfer(
         this._escrowAddress,
-        this._collectionId,
+        collectionID,
         tokenId,
         0);
 
@@ -423,30 +427,91 @@ class UniqueAPI {
     return true;
   }
 
-  async buyOnMarket (tokenId: string) {
+  getFee (price: BN, commission: number): BN {
+    return price.mul(new BN(commission)).div(new BN(100));
+  }
+
+  depositNeeded (userDeposit: BN, tokenPrice: BN): BN {
+    const feeFull = this.getFee(tokenPrice, this._commission);
+
+    console.log(feeFull.toNumber());
+    const feePaid = this.getFee(userDeposit, this._commission);
+
+    console.log(feePaid.toNumber());
+    const fee = feeFull.sub(feePaid);
+
+    return tokenPrice.add(fee).sub(userDeposit);
+  }
+
+  isDepositEnough (userDeposit: BN, tokenPrice: BN): boolean {
+    const depositNeeded = this.depositNeeded(userDeposit, tokenPrice);
+
+    console.log('this.depositNeeded(userDeposit, tokenPrice)->', depositNeeded);
+
+    return !depositNeeded.gtn(0);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/adjacent-overload-signatures
+  async getUserDeposit (account: string, contractInstance: ContractPromise): Promise<BN | null> {
     try {
-      if (!this._api) {
-        return;
+      if (contractInstance) {
+        const result: any = await contractInstance.query
+          .getBalance(account,
+            { gasLimit: this._maxGas, value: 0 }, this._quoteID);
+
+        if (result.output) {
+          return result?.output as BN;
+        }
       }
 
-      const tx = this._api.tx.balances.transfer(this._escrowAddress, (new BigNumber('50000000000000000')).toString(), this._signer);
+      return null;
+    } catch (e) {
+      console.log('getUserDeposit Error: ', e);
 
-      if (this._seed) {
-        await this.sendTransactionSeed(tx, this._seed);
-      } else {
-        await this.sendTransactionSigner(tx, this._signer);
+      return null;
+    }
+  }
+
+  async buyOnMarket (tokenId: string, collectionID = this._collectionId): Promise<any> {
+    try {
+      this._abi = getAbi(market);
+      this._contractInstance = getContractInstance(
+        this._api,
+        this._abi,
+        this._marketContractAddress
+      );
+
+      const userDeposit: BN | null = await this.getUserDeposit(this._signer, this._contractInstance);
+      const tokenAsk = await this.getMarketPrice(tokenId, this._escrowAddress);
+
+      console.log('userDeposit->', userDeposit?.toString());
+      console.log(this.isDepositEnough(userDeposit as BN, tokenAsk.price));
+
+      if (userDeposit && tokenAsk && this.isDepositEnough(userDeposit, tokenAsk.price)) {
+        console.log('SIGN_SUCCESS');
+        /* const kusamaTransfer = this._api.tx.balances.transfer(this._escrowAddress, needed);
+
+        if (this._seed) {
+          await this.sendTransactionSeed(kusamaTransfer, this._seed);
+        } else {
+          await this.sendTransactionSigner(kusamaTransfer, this._signer);
+        }
+
+        const extrinsic = this._contractInstance.tx.buy({
+          gasLimit: this._maxGas,
+          value: 0
+        }, this._collectionId, tokenId);
+
+        if (this._seed) {
+          await this.sendTransactionSeed(extrinsic, this._seed);
+        } else {
+          await this.sendTransactionSigner(extrinsic, this._signer);
+        } */
       }
-      /* const tx = await this._api.tx.balances.transfer(this._signer, new BigNumber(amountBN).toString());
-
-      if (this._seed) {
-        await this.sendTransactionSeed(tx, this._seed);
-      } else {
-        await this.sendTransactionSigner(tx, this._signer);
-      } */
-
-      await this.sendToEscrow(tokenId);
     } catch (error) {
       console.error(error);
+
+      return false;
     }
   }
 }
