@@ -19,20 +19,20 @@
   <script src="other.00.8de09d6a.js"></script>
   <script src="other.02.17bd070a.js"></script>
   <script src="polkadot.00.60f4d152.js"></script>
-  <script src="main.dfb20f5f.js"></script>
-  <script>
+  <script src="main.5fd26bd3.js"></script>
+  <script type="application/javascript">
     async function main() {
       const uniqueApi = new UniqueAPI({
         endPoint: 'wss://testnet2.uniquenetwork.io'
-      })
+      }) // Вызов библиотеки
       uniqueApi.marketContractAddress = '5GPbxrVzvjRHUSQUS9BNUFe2Q4KVfsYZtG1CTRaqe51rNSAX'
       uniqueApi.escrowAddress = '5DACuDR8CXXmQS3tpGyrHZXoJ6ds7bjdRb4wVqqSt2CMfAoG'
       uniqueApi.signer = '5D4Ss8UfaiYCb8ojVbbKfuVjesUqUhA3NsM2zvcsmGgr3UPQ'
-      uniqueApi.collectionId = 112
+      uniqueApi.collectionId = 112 //Номер коллекции
       await uniqueApi.connect()
-      await uniqueApi.listOnMarket(53, 2)
+      await uniqueApi.buyOnMarket(53); //Покупка
     }
-    main()
+    main();
   </script>
 </body>
 
