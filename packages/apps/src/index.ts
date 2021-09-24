@@ -1,3 +1,4 @@
+/* eslint-disable sort-keys */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
@@ -11,8 +12,9 @@ import type { KeyringPair } from '@polkadot/keyring/types';
 
 import BN from 'bn.js';
 
-import { Keyring } from '@polkadot/api';
+import { ApiPromise, Keyring } from '@polkadot/api';
 import { web3Accounts, web3Enable, web3FromAddress } from '@polkadot/extension-dapp';
+import { WsProvider } from '@polkadot/rpc-provider';
 
 import BigNumber from './bignumber.js';
 import connect from './connect';
@@ -45,6 +47,7 @@ class UniqueAPI {
   private _quoteID: number;
   private _escrowAddress: string;
   private _commission: number;
+  private kusamaParity = 'wss://kusama-rpc.polkadot.io';
 
   constructor ({ endPoint, escrowAddress, marketContractAddress, maxGas, maxValue, quoteID }: { endPoint?: string, escrowAddress: string, marketContractAddress: string, maxGas?: number, maxValue: number, quoteID: number }) {
     this._keyring = new Keyring({
@@ -138,7 +141,6 @@ class UniqueAPI {
     if (this._collectionId) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       this._onChainSchema = await getOnChainSchema(this._api, this._collectionId);
-      console.log('_onChainSchema', this._onChainSchema);
       this._protoApi = new ProtoApi(this._onChainSchema);
     } else {
       throw new Error('please set collectionId');
@@ -153,7 +155,7 @@ class UniqueAPI {
    * @return {{ owner: string, price: BN }} {}
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getMarketPrice (tokenId: string, matcherContract: string = this._escrowAddress): Promise<any> {
+  async getMarketPrice (tokenId: string, matcherContract: string = this._escrowAddress, collectionId = this._collectionId): Promise<any> {
     this._abi = getAbi(market);
     this._contractInstance = getContractInstance(
       this._api,
@@ -161,7 +163,7 @@ class UniqueAPI {
       this._marketContractAddress
     );
 
-    const askIdResult: any = await this._contractInstance.query.getAskIdByToken(matcherContract, { gasLimit: this._maxGas, value: this._maxValue }, this._collectionId, tokenId);
+    const askIdResult: any = await this._contractInstance.query.getAskIdByToken(matcherContract, { gasLimit: this._maxGas, value: this._maxValue }, collectionId, tokenId);
 
     if (askIdResult.output) {
       const askId = askIdResult.output.toNumber();
@@ -188,7 +190,6 @@ class UniqueAPI {
     if (collectionId && tokenId) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       this._onChainSchema = await getOnChainSchema(this._api, collectionId);
-      console.log('_onChainSchema', this._onChainSchema);
       this._protoApi = new ProtoApi(this._onChainSchema);
 
       const token = await getToken(this._api, collectionId, tokenId);
@@ -433,11 +434,7 @@ class UniqueAPI {
 
   depositNeeded (userDeposit: BN, tokenPrice: BN): BN {
     const feeFull = this.getFee(tokenPrice, this._commission);
-
-    console.log(feeFull.toNumber());
     const feePaid = this.getFee(userDeposit, this._commission);
-
-    console.log(feePaid.toNumber());
     const fee = feeFull.sub(feePaid);
 
     return tokenPrice.add(fee).sub(userDeposit);
@@ -445,8 +442,6 @@ class UniqueAPI {
 
   isDepositEnough (userDeposit: BN, tokenPrice: BN): boolean {
     const depositNeeded = this.depositNeeded(userDeposit, tokenPrice);
-
-    console.log('this.depositNeeded(userDeposit, tokenPrice)->', depositNeeded);
 
     return !depositNeeded.gtn(0);
   }
@@ -472,7 +467,49 @@ class UniqueAPI {
     }
   }
 
-  async buyOnMarket (tokenId: string, collectionID = this._collectionId): Promise<any> {
+  async wait (ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  async initKusamaApi (): Promise<ApiPromise> {
+    const rtt = {
+      DisputeStatementSet: {
+        candidateHash: 'CandidateHash',
+        session: 'SessionIndex',
+        statements: 'Vec<(DisputeStatement, ParaValidatorIndex, ValidatorSignature)>'
+      },
+      ValidDisputeStatementKind: {
+        _enum: {
+          Explicit: 'Null',
+          BackingSeconded: 'Hash',
+          BackingValid: 'Hash',
+          ApprovalChecking: 'Null'
+        }
+      }
+    };
+
+    const provider = new WsProvider(this.kusamaParity);
+    const api = new ApiPromise({ provider, types: rtt });
+
+    // eslint-disable-next-line @typescript-eslint/require-await
+    api.on('disconnected', async (value: any) => {
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      console.log(`disconnected: ${value}`, 'ERROR');
+      process.exit();
+    });
+    // eslint-disable-next-line @typescript-eslint/require-await
+    api.on('error', async (value) => {
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      console.log(`error: ${value}`, 'ERROR');
+      process.exit();
+    });
+
+    await api.isReady;
+
+    return api;
+  }
+
+  async buyOnMarket (tokenId: string, collectionId = this._collectionId): Promise<any> {
     try {
       this._abi = getAbi(market);
       this._contractInstance = getContractInstance(
@@ -482,14 +519,25 @@ class UniqueAPI {
       );
 
       const userDeposit: BN | null = await this.getUserDeposit(this._signer, this._contractInstance);
-      const tokenAsk = await this.getMarketPrice(tokenId, this._escrowAddress);
-
-      console.log('userDeposit->', userDeposit?.toString());
-      console.log(this.isDepositEnough(userDeposit as BN, tokenAsk.price));
+      const tokenAsk = await this.getMarketPrice(tokenId, this._escrowAddress, collectionId);
 
       if (userDeposit && tokenAsk && this.isDepositEnough(userDeposit, tokenAsk.price)) {
         console.log('SIGN_SUCCESS');
-        /* const kusamaTransfer = this._api.tx.balances.transfer(this._escrowAddress, needed);
+        const extrinsic = this._contractInstance.tx.buy({
+          gasLimit: this._maxGas,
+          value: 0
+        }, collectionId, tokenId);
+
+        if (this._seed) {
+          await this.sendTransactionSeed(extrinsic, this._seed);
+        } else {
+          await this.sendTransactionSigner(extrinsic, this._signer);
+        }
+      } else {
+        const kusamaApi: ApiPromise = await this.initKusamaApi();
+        const needed = this.depositNeeded(userDeposit as BN, tokenAsk.price);
+
+        const kusamaTransfer = kusamaApi.tx.balances.transfer(this._escrowAddress, needed);
 
         if (this._seed) {
           await this.sendTransactionSeed(kusamaTransfer, this._seed);
@@ -497,16 +545,18 @@ class UniqueAPI {
           await this.sendTransactionSigner(kusamaTransfer, this._signer);
         }
 
+        await this.wait(3000);
+
         const extrinsic = this._contractInstance.tx.buy({
           gasLimit: this._maxGas,
           value: 0
-        }, this._collectionId, tokenId);
+        }, collectionId, tokenId);
 
         if (this._seed) {
           await this.sendTransactionSeed(extrinsic, this._seed);
         } else {
           await this.sendTransactionSigner(extrinsic, this._signer);
-        } */
+        }
       }
     } catch (error) {
       console.error(error);
