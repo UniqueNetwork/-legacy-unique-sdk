@@ -6,7 +6,7 @@
 import { ApiPromise } from '@polkadot/api';
 import { Abi, ContractPromise } from '@polkadot/api-contract';
 
-function getContractInstance (api: ApiPromise, abi: Abi, marketContractAddress: string) {
+function getContractInstance (api: ApiPromise, abi: Abi, marketContractAddress: string): ContractPromise {
   return new ContractPromise(api, abi, marketContractAddress);
 }
 

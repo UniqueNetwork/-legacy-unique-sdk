@@ -129,279 +129,136 @@ class UniqueAPI {
     return this._contractInstance;
   }
 
-  /**
-   *
-   */
-  async connect () {
-    this._api = await connect(this._endpoint, rtt);
-  }
+  private async sendTransactionSeed (transaction: any, seed: KeyringPair, getStatus: (events: any, status: any) => string | null): Promise<boolean> {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      return new Promise(async (resolve, reject) => {
+        const unsub = await transaction.signAndSend(seed,
+          ({ events = [], status }: { events: any[], status: string }) => {
+            const transactionStatus = getStatus(events, status);
 
-  // @todo - rename this
-  async updated () {
-    if (this._collectionId) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      this._onChainSchema = await getOnChainSchema(this._api, this._collectionId);
-      this._protoApi = new ProtoApi(this._onChainSchema);
-    } else {
-      throw new Error('please set collectionId');
+            if (transactionStatus === 'Success') {
+              console.log('Transaction successful');
+              resolve(true);
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+              unsub();
+            } else if (transactionStatus === 'Fail') {
+              console.log(`Something went wrong with transaction. Status: ${status}`);
+              console.log(events);
+              // eslint-disable-next-line prefer-promise-reject-errors
+              reject(false);
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+              unsub();
+            }
+          });
+      });
+    } catch (error) {
+      console.error(error);
+
+      return false;
     }
   }
 
-  // @todo - add getMarketPrice method
-  /**
-   * @param {string} collectionId
-   * @param {string} tokenId
-   * @param {string} matcherContract
-   * @return {{ owner: string, price: BN }} {}
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getMarketPrice (tokenId: string, matcherContract: string = this._escrowAddress, collectionId = this._collectionId): Promise<any> {
-    this._abi = getAbi(market);
-    this._contractInstance = getContractInstance(
-      this._api,
-      this._abi,
-      this._marketContractAddress
-    );
+  private getStatus (events: any, status: any): string | null {
+    if (status.isReady) {
+      return 'NotReady';
+    }
 
-    const askIdResult: any = await this._contractInstance.query.getAskIdByToken(matcherContract, { gasLimit: this._maxGas, value: this._maxValue }, collectionId, tokenId);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (status.isBroadcast) {
+      return 'NotReady';
+    }
 
-    if (askIdResult.output) {
-      const askId = askIdResult.output.toNumber();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (status.isInBlock || status.isFinalized) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+      const errors = events.filter((e: { event: { data: { method: string; }; }; }) => e.event.data.method === 'ExtrinsicFailed');
 
-      if (askId !== 0) {
-        const askResult: any = await this._contractInstance.query.getAskById(matcherContract, { gasLimit: this._maxGas, value: this._maxValue }, askId);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (errors.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        console.log(`Transaction failed, ${errors}`, 'ERROR');
 
-        if (askResult.output) {
-          const askOwnerAddress = this._keyring.encodeAddress(askResult.output[4].toString());
-          const ask = {
-            owner: askOwnerAddress,
-            price: askResult.output[3]
-          };
+        return 'Fail';
+      }
 
-          return ask;
-        }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+      if (events.filter((e: { event: { data: { method: string; }; }; }) => e.event.data.method === 'ExtrinsicSuccess').length > 0) {
+        return 'Success';
       }
     }
 
     return null;
   }
 
-  async getNftProperties (tokenId: string, collectionId = this._collectionId) {
-    if (collectionId && tokenId) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      this._onChainSchema = await getOnChainSchema(this._api, collectionId);
-      this._protoApi = new ProtoApi(this._onChainSchema);
-
-      const token = await getToken(this._api, collectionId, tokenId);
-
-      return {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        data: { ...this._protoApi.deserialize(token.buffer, 'en') },
-        owner: token.owner
-      };
-    } else {
-      throw new Error('collectionId or tokenId not specified');
-    }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  async sendTransactionSeed (transaction, seed) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const getTransactionStatus = (events, status) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (status.isReady) {
-        return 'NotReady';
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (status.isBroadcast) {
-        return 'NotReady';
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (status.isInBlock || status.isFinalized) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        const errors = events.filter((e: { event: { data: { method: string; }; }; }) => e.event.data.method === 'ExtrinsicFailed');
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (errors.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-          console.log(`Transaction failed, ${errors}`, 'ERROR');
-
-          return 'Fail';
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        if (events.filter((e: { event: { data: { method: string; }; }; }) => e.event.data.method === 'ExtrinsicSuccess').length > 0) {
-          return 'Success';
-        }
-      }
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises,no-async-promise-executor
-    return new Promise(async function (resolve, reject) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        const unsub = await transaction.signAndSend(seed, ({ events = [], status }: { events: any[], status: string }) => {
-          const transactionStatus = getTransactionStatus(events, status);
-
-          if (transactionStatus === 'Success') {
-            console.log('Transaction successful');
-            resolve(events);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            unsub();
-          } else if (transactionStatus === 'Fail') {
-            console.log(`Something went wrong with transaction. Status: ${status}`);
-            reject(events);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            unsub();
-          }
-        });
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  async sendTransactionSigner (transaction, signer) {
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    const getTransactionStatus = (events, status) => {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (status.isReady) {
-        return 'NotReady';
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (status.isBroadcast) {
-        return 'NotReady';
-      }
-
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (status.isInBlock || status.isFinalized) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        const errors = events.filter((e: { event: { data: { method: string; }; }; }) => e.event.data.method === 'ExtrinsicFailed');
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        if (errors.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-          console.log(`Transaction failed, ${errors}`, 'ERROR');
-
-          return 'Fail';
-        }
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        if (events.filter((e: { event: { data: { method: string; }; }; }) => e.event.data.method === 'ExtrinsicSuccess').length > 0) {
-          return 'Success';
-        }
-      }
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises,no-async-promise-executor
-    return new Promise(async function (resolve, reject) {
-      try {
-        const extensions = await web3Enable('polkadot-js/apps');
-
-        if (extensions.length === 0) {
-          throw new Error('no extension installed, or the user did not accept the authorization');
-        }
-
-        const allAccounts = await web3Accounts();
-
-        if (allAccounts.length === 0) {
-          throw new Error('no account');
-        }
-
-        const injector = await web3FromAddress(signer);
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
-        const unsub = await transaction.signAndSend(signer, { signer: injector.signer }, ({ events = [], status }: { events: any[], status: string }) => {
-          const transactionStatus = getTransactionStatus(events, status);
-
-          if (transactionStatus === 'Success') {
-            console.log('Transaction successful');
-            resolve(events);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            unsub();
-          } else if (transactionStatus === 'Fail') {
-            console.log(`Something went wrong with transaction. Status: ${status}`);
-            reject(events);
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-            unsub();
-          }
-        });
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  async cancelOnMarket (tokenId: string, collectionID = this._collectionId) {
+  private getContract (): ContractPromise {
     this._abi = getAbi(market);
-    this._contractInstance = getContractInstance(
+
+    return getContractInstance(
       this._api,
       this._abi,
       this._marketContractAddress
     );
-
-    if (this._contractInstance) {
-      const tx = this._contractInstance.tx.cancel(
-        this._maxValue,
-        this._maxGas,
-        collectionID,
-        tokenId);
-
-      if (this._seed) {
-        await this.sendTransactionSeed(tx, this._seed);
-      } else {
-        await this.sendTransactionSigner(tx, this._signer);
-      }
-    }
   }
 
-  async listOnMarket (tokenId: string, price: number, collectionID = this._collectionId) {
+  private async sendTransactionSig (transaction: any, signer: string, getStatus: (events: any, status: any) => string | null): Promise<boolean> {
     try {
-      const priceBN = (new BigNumber(price)).times(1e12).integerValue(BigNumber.ROUND_UP);
+      const extensions = await web3Enable('polkadot-js/apps');
 
-      this._abi = getAbi(market);
-      this._contractInstance = getContractInstance(
-        this._api,
-        this._abi,
-        this._marketContractAddress
-      );
-
-      if (this._contractInstance) {
-        const sendEscrow: boolean = await this.sendToEscrow(tokenId);
-
-        if (sendEscrow) {
-          const tx = this._contractInstance.tx.ask(
-            this._maxValue,
-            this._maxGas,
-            collectionID,
-            tokenId,
-            this._quoteID,
-            priceBN.toString()
-          );
-
-          if (this._seed) {
-            await this.sendTransactionSeed(tx, this._seed);
-          } else {
-            await this.sendTransactionSigner(tx, this._signer);
-          }
-        }
+      if (extensions.length === 0) {
+        throw new Error('no extension installed, or the user did not accept the authorization');
       }
+
+      const allAccounts = await web3Accounts();
+
+      if (allAccounts.length === 0) {
+        throw new Error('no account');
+      }
+
+      const injector = await web3FromAddress(signer);
+
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
+      return new Promise(async (resolve, reject) => {
+        const unsub = await transaction.signAndSend(signer, { signer: injector.signer }, ({ events = [], status }: { events: any[], status: string }) => {
+          const transactionStatus = getStatus(events, status);
+
+          if (transactionStatus === 'Success') {
+            console.log('Transaction successful');
+            console.log(events);
+            resolve(true);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            unsub();
+          } else if (transactionStatus === 'Fail') {
+            console.log(`Something went wrong with transaction. Status: ${status}`);
+            // eslint-disable-next-line prefer-promise-reject-errors
+            console.log(events);
+            // eslint-disable-next-line prefer-promise-reject-errors
+            reject(false);
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+            unsub();
+          }
+        });
+      });
     } catch (error) {
       console.error(error);
+
+      return false;
     }
   }
 
-  async sendToEscrow (tokenId: string, collectionID = this._collectionId): Promise<boolean> {
+  private async sendSign (transaction: any, signer: string, seed: KeyringPair | null, getStatus: (events: any, status: any) => string | null): Promise<boolean> {
+    let status = false;
+
+    if (seed) {
+      status = await this.sendTransactionSeed(transaction, seed, getStatus);
+    } else {
+      status = await this.sendTransactionSig(transaction, signer, getStatus);
+    }
+
+    return status;
+  }
+
+  private async sendToEscrow (tokenId: string, collectionID = this._collectionId): Promise<boolean> {
     try {
       if (!this._api) {
         return false;
@@ -414,25 +271,19 @@ class UniqueAPI {
         tokenId,
         0);
 
-      if (this._seed) {
-        await this.sendTransactionSeed(tx, this._seed);
-      } else {
-        await this.sendTransactionSigner(tx, this._signer);
-      }
+      return await this.sendSign(tx, this._signer, this._seed, this.getStatus);
     } catch (error) {
       console.error(error);
 
       return false;
     }
-
-    return true;
   }
 
-  getFee (price: BN, commission: number): BN {
+  private getFee (price: BN, commission: number): BN {
     return price.mul(new BN(commission)).div(new BN(100));
   }
 
-  depositNeeded (userDeposit: BN, tokenPrice: BN): BN {
+  private depositNeeded (userDeposit: BN, tokenPrice: BN): BN {
     const feeFull = this.getFee(tokenPrice, this._commission);
     const feePaid = this.getFee(userDeposit, this._commission);
     const fee = feeFull.sub(feePaid);
@@ -440,14 +291,14 @@ class UniqueAPI {
     return tokenPrice.add(fee).sub(userDeposit);
   }
 
-  isDepositEnough (userDeposit: BN, tokenPrice: BN): boolean {
+  private isDepositEnough (userDeposit: BN, tokenPrice: BN): boolean {
     const depositNeeded = this.depositNeeded(userDeposit, tokenPrice);
 
     return !depositNeeded.gtn(0);
   }
 
   // eslint-disable-next-line @typescript-eslint/adjacent-overload-signatures
-  async getUserDeposit (account: string, contractInstance: ContractPromise): Promise<BN | null> {
+  private async getUserDeposit (account: string, contractInstance: ContractPromise): Promise<BN | null> {
     try {
       if (contractInstance) {
         const result: any = await contractInstance.query
@@ -467,11 +318,124 @@ class UniqueAPI {
     }
   }
 
-  async wait (ms: number): Promise<void> {
+  private async wait (ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  async initKusamaApi (): Promise<ApiPromise> {
+  /**
+   *
+   */
+  async connect () {
+    this._api = await connect(this._endpoint, rtt);
+  }
+
+  // @todo - rename this
+  async updated () {
+    if (this._collectionId) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      this._onChainSchema = await getOnChainSchema(this._api, this._collectionId);
+      this._protoApi = new ProtoApi(this._onChainSchema);
+    } else {
+      throw new Error('please set collectionId');
+    }
+  }
+
+  /**
+   * @param {string} collectionId
+   * @param {string} tokenId
+   * @param {string} matcherContract
+   * @return {{ owner: string, price: BN }} {}
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getMarketPrice (tokenId: string, matcherContract: string = this._escrowAddress, collectionId = this._collectionId): Promise<any> {
+    const contractInstance: ContractPromise = this.getContract();
+
+    const askIdResult: any = await contractInstance.query.getAskIdByToken(matcherContract, { gasLimit: this._maxGas, value: this._maxValue }, collectionId, tokenId);
+
+    if (askIdResult.output) {
+      const askId = askIdResult.output.toNumber();
+
+      if (askId !== 0) {
+        const askResult: any = await contractInstance.query.getAskById(matcherContract, { gasLimit: this._maxGas, value: this._maxValue }, askId);
+
+        if (askResult.output) {
+          const askOwnerAddress = this._keyring.encodeAddress(askResult.output[4].toString());
+          const ask = {
+            owner: askOwnerAddress,
+            price: askResult.output[3]
+          };
+
+          return ask;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  async getNftProperties (tokenId: string, collectionId = this._collectionId): Promise<any> {
+    if (collectionId && tokenId) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      this._onChainSchema = await getOnChainSchema(this._api, collectionId);
+      this._protoApi = new ProtoApi(this._onChainSchema);
+
+      const token = await getToken(this._api, collectionId, tokenId);
+
+      return {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-member-access
+        data: { ...this._protoApi.deserialize(token.buffer, 'en') },
+        owner: token.owner
+      };
+    } else {
+      throw new Error('collectionId or tokenId not specified');
+    }
+  }
+
+  async cancelOnMarket (tokenId: string, collectionID = this._collectionId): Promise<boolean> {
+    const contractInstance: ContractPromise = this.getContract();
+
+    if (contractInstance) {
+      const tx = contractInstance.tx.cancel(
+        this._maxValue,
+        this._maxGas,
+        collectionID,
+        tokenId);
+
+      return await this.sendSign(tx, this._signer, this._seed, this.getStatus);
+    }
+
+    return false;
+  }
+
+  async listOnMarket (tokenId: string, price: number, collectionID = this._collectionId): Promise<boolean> {
+    const priceBN = (new BigNumber(price)).times(1e12).integerValue(BigNumber.ROUND_UP);
+    const contractInstance: ContractPromise = this.getContract();
+
+    if (contractInstance) {
+      const sendEscrow: boolean = await this.sendToEscrow(tokenId);
+
+      if (sendEscrow) {
+        const tx = contractInstance.tx.ask(
+          this._maxValue,
+          this._maxGas,
+          collectionID,
+          tokenId,
+          this._quoteID,
+          priceBN.toString()
+        );
+
+        return await this.sendSign(tx, this._signer, this._seed, this.getStatus);
+      }
+
+      return false;
+    }
+
+    return false;
+  }
+
+  private async initKusamaApi (): Promise<ApiPromise> {
     const rtt = {
       DisputeStatementSet: {
         candidateHash: 'CandidateHash',
@@ -509,54 +473,71 @@ class UniqueAPI {
     return api;
   }
 
-  async buyOnMarket (tokenId: string, collectionId = this._collectionId): Promise<any> {
+  private async kusamaTranser (needed: BN): Promise<boolean> {
     try {
-      this._abi = getAbi(market);
-      this._contractInstance = getContractInstance(
-        this._api,
-        this._abi,
-        this._marketContractAddress
-      );
+      const kusamaApi: ApiPromise = await this.initKusamaApi();
+      const kusamaTransfer = kusamaApi.tx.balances.transfer(this._escrowAddress, needed);
 
-      const userDeposit: BN | null = await this.getUserDeposit(this._signer, this._contractInstance);
+      return this.sendSign(kusamaTransfer, this._signer, this._seed, this.getStatus);
+    } catch (error) {
+      console.error(error);
+
+      return false;
+    }
+  }
+
+  async buyOnMarket (tokenId: string, collectionId = this._collectionId): Promise<boolean> {
+    try {
+      const contractInstance: ContractPromise = this.getContract();
+      let userDeposit: BN | null = await this.getUserDeposit(this._signer, contractInstance);
       const tokenAsk = await this.getMarketPrice(tokenId, this._escrowAddress, collectionId);
 
       if (userDeposit && tokenAsk && this.isDepositEnough(userDeposit, tokenAsk.price)) {
-        console.log('SIGN_SUCCESS');
-        const extrinsic = this._contractInstance.tx.buy({
+        const extrinsic = contractInstance.tx.buy({
           gasLimit: this._maxGas,
           value: 0
         }, collectionId, tokenId);
 
-        if (this._seed) {
-          await this.sendTransactionSeed(extrinsic, this._seed);
-        } else {
-          await this.sendTransactionSigner(extrinsic, this._signer);
-        }
+        return await this.sendSign(extrinsic, this._signer, this._seed, this.getStatus);
       } else {
-        const kusamaApi: ApiPromise = await this.initKusamaApi();
         const needed = this.depositNeeded(userDeposit as BN, tokenAsk.price);
+        const isTransfer = await this.kusamaTranser(needed);
 
-        const kusamaTransfer = kusamaApi.tx.balances.transfer(this._escrowAddress, needed);
+        if (isTransfer) {
+          let result = false;
+          let counter = 0;
 
-        if (this._seed) {
-          await this.sendTransactionSeed(kusamaTransfer, this._seed);
-        } else {
-          await this.sendTransactionSigner(kusamaTransfer, this._signer);
+          do {
+            await this.wait(2000);
+            userDeposit = await this.getUserDeposit(this._signer, contractInstance);
+            result = this.isDepositEnough(userDeposit as BN, tokenAsk.price);
+
+            if (result === true) {
+              const extrinsic = contractInstance.tx.buy({
+                gasLimit: this._maxGas,
+                value: 0
+              }, collectionId, tokenId);
+
+              await this.sendSign(extrinsic, this._signer, this._seed, this.getStatus);
+            }
+
+            counter = counter + 1;
+
+            if (counter === 120) {
+              result = true;
+            }
+          } while (result === false);
+
+          console.log(result);
+
+          if (counter === 120) {
+            return false;
+          } else {
+            return true;
+          }
         }
 
-        await this.wait(3000);
-
-        const extrinsic = this._contractInstance.tx.buy({
-          gasLimit: this._maxGas,
-          value: 0
-        }, collectionId, tokenId);
-
-        if (this._seed) {
-          await this.sendTransactionSeed(extrinsic, this._seed);
-        } else {
-          await this.sendTransactionSigner(extrinsic, this._signer);
-        }
+        return false;
       }
     } catch (error) {
       console.error(error);
