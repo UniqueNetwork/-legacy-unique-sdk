@@ -330,10 +330,10 @@ class UniqueAPI {
   }
 
   // @todo - rename this
-  async updated () {
-    if (this._collectionId) {
+  async updated (collectionID = this._collectionId): Promise<void> {
+    if (collectionID) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      this._onChainSchema = await getOnChainSchema(this._api, this._collectionId);
+      this._onChainSchema = await getOnChainSchema(this._api, collectionID);
       this._protoApi = new ProtoApi(this._onChainSchema);
     } else {
       throw new Error('please set collectionId');
