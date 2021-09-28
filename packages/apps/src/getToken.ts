@@ -16,7 +16,7 @@ import hexToBuffer from './internal/hexToBuffer';
  * @returns {Object} {owner, buffer}
  * @example
  */
-async function getToken (api: ApiPromise, collectionId: string, id: string): Promise<{ buffer: Uint8Array, owner: string }> {
+async function getToken (api: ApiPromise, collectionId: number, id: string): Promise<{ buffer: Uint8Array, owner: string }> {
   const token: TokenDetailsInterface = (await api.query.nft.nftItemList(collectionId, id)).toJSON() as unknown as TokenDetailsInterface;
 
   return {
