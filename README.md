@@ -1,18 +1,18 @@
 # Unique SDK
 
-## Сборка проекта:
+## build project:
 
-### Установка зависимостей
+### Install dependencies
 ```bash
 yarn install
 ```
 
-### Разработка
+### start
 ```bash
 yarn run start
 ```
 
-### Cборка
+### build
 ```bash
 yarn run build
 ```
@@ -36,16 +36,16 @@ const uniqueApi = await createApi();
 ```
 
 ## buyOnMarket
-Покупка токенов
+buy tokens
 ```js
-uniqueApi.collectionId = 112; //Номер коллекции
-await uniqueApi.buyOnMarket(53); //Покупка
+uniqueApi.collectionId = 112; //collection number
+await uniqueApi.buyOnMarket(53); //buy tokens
 
 // or
 await uniqueApi.buyOnMarket(53, 113); // token 53, collection 113
 ```
 ## cancelOnMarket
-Отмена продажи токена
+Cancel token sale
 ```js
 uniqueApi.collectionId = 112;
 await uniqueApi.cancelOnMarket(53);
@@ -55,7 +55,7 @@ await uniqueApi.cancelOnMarket(53, 113);
 ```
 
 ## getNftProperties
-Получения информации об токене
+get token information
 ```js
 api.collectionId = 112;
 let token = await uniqueApi.getNftProperties(25);
@@ -65,7 +65,7 @@ token  =  await uniqueApi.getNftProperties(25, 113);
 ```
 
 ## listOnMarket
-Выставления на продажу токен
+list token for sale 
 ```js
 uniqueApi.collectionId = 112;
 await uniqueApi.listOnMarket(53, 2); // collection 112, token 53, price 2 KSM
@@ -75,6 +75,7 @@ await uniqueApi.listOnMarket(53, 2, 112);
 ```
 
 ## getMarketPrice
+get token price
 ```js
 uniqueApi.collectionId = 112;
 let price = await uniqueApi.getMarketPrice(53);
