@@ -18,7 +18,7 @@ import collectionById from './collectionById';
  * @example
  *
  */
-async function getOnChainSchema (api: ApiPromise, id: string) {
+async function getOnChainSchema (api: ApiPromise, id: number) {
   const collection = await collectionById(api, id);
 
   return JSON.parse(

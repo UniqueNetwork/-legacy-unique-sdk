@@ -6,7 +6,7 @@ import type { NftCollectionInterface } from './types';
 
 import { ApiPromise } from '@polkadot/api';
 
-async function collectionById(api: ApiPromise, collectionId: string): Promise<NftCollectionInterface> {
+async function collectionById(api: ApiPromise, collectionId: number): Promise<NftCollectionInterface> {
   return (await api.query.nft.collectionById(collectionId)).toJSON() as unknown as NftCollectionInterface;
 }
 

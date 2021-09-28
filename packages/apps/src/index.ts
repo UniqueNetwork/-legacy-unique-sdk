@@ -33,7 +33,7 @@ import rtt from './runtime_types.json';
 class UniqueAPI {
   private _keyring: Keyring;
   private _onChainSchema: any;
-  private _collectionId: string | null = null;
+  private _collectionId = 0;
   private _seed: KeyringPair | null = null;
   private _signer: any;
   private _api: any;
@@ -75,7 +75,7 @@ class UniqueAPI {
     return this._endpoint;
   }
 
-  set collectionId (id) {
+  set collectionId (id: number) {
     this._collectionId = id;
   }
 
@@ -258,7 +258,7 @@ class UniqueAPI {
     return status;
   }
 
-  private async sendToEscrow (tokenId: string, collectionID = this._collectionId): Promise<boolean> {
+  private async sendToEscrow (tokenId: string, collectionID: number = this.collectionId): Promise<boolean> {
     try {
       if (!this._api) {
         return false;
@@ -330,7 +330,7 @@ class UniqueAPI {
   }
 
   // @todo - rename this
-  async updated (collectionID = this._collectionId): Promise<void> {
+  async updated (collectionID: number = this._collectionId): Promise<void> {
     if (collectionID) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       this._onChainSchema = await getOnChainSchema(this._api, collectionID);
@@ -347,7 +347,7 @@ class UniqueAPI {
    * @return {{ owner: string, price: BN }} {}
    */
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getMarketPrice (tokenId: string, matcherContract: string = this._escrowAddress, collectionId = this._collectionId): Promise<any> {
+  async getMarketPrice (tokenId: string, matcherContract: string = this._escrowAddress, collectionId: number = this._collectionId): Promise<any> {
     const contractInstance: ContractPromise = this.getContract();
 
     const askIdResult: any = await contractInstance.query.getAskIdByToken(matcherContract, { gasLimit: this._maxGas, value: this._maxValue }, collectionId, tokenId);
@@ -373,7 +373,7 @@ class UniqueAPI {
     return null;
   }
 
-  async getNftProperties (tokenId: string, collectionId = this._collectionId): Promise<any> {
+  async getNftProperties (tokenId: string, collectionId: number = this._collectionId): Promise<any> {
     if (collectionId && tokenId) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       this._onChainSchema = await getOnChainSchema(this._api, collectionId);
@@ -393,7 +393,7 @@ class UniqueAPI {
     }
   }
 
-  async cancelOnMarket (tokenId: string, collectionID = this._collectionId): Promise<boolean> {
+  async cancelOnMarket (tokenId: string, collectionID: number = this._collectionId): Promise<boolean> {
     const contractInstance: ContractPromise = this.getContract();
 
     if (contractInstance) {
@@ -409,7 +409,7 @@ class UniqueAPI {
     return false;
   }
 
-  async listOnMarket (tokenId: string, price: number, collectionID = this._collectionId): Promise<boolean> {
+  async listOnMarket (tokenId: string, price: number, collectionID: number = this._collectionId): Promise<boolean> {
     const priceBN = (new BigNumber(price)).times(1e12).integerValue(BigNumber.ROUND_UP);
     const contractInstance: ContractPromise = this.getContract();
 
@@ -486,7 +486,7 @@ class UniqueAPI {
     }
   }
 
-  async buyOnMarket (tokenId: string, collectionId = this._collectionId): Promise<boolean> {
+  async buyOnMarket (tokenId: string, collectionId: number = this._collectionId): Promise<boolean> {
     try {
       const contractInstance: ContractPromise = this.getContract();
       let userDeposit: BN | null = await this.getUserDeposit(this._signer, contractInstance);
