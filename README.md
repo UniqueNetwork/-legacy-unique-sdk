@@ -2,8 +2,6 @@
 
 Unique Network is a scalable blockchain for composable NFTs with advanced economies — The NFT chain built for Polkadot and Kusama.
 This is an SDK for working with Unique Network.
-Unfortunately, the SDK needs to be built for the project. :pensive:
-We are aware of this and will fix it in the next version. :smiley:
 
 ## Building a project:
 
@@ -45,41 +43,33 @@ const uniqueApi = await createApi();
 ## buyOnMarket
 Buy of a token. To buy a token, calls the method `buyOnMarket`
 ```js
-uniqueApi.collectionId = 112; //Collection number
-await uniqueApi.buyOnMarket(53);
+uniqueApi.collectionId = 112; // Collection number
+await uniqueApi.buyOnMarket(53); // token number
 ```
 ## cancelOnMarket
 Cancellation token
 ```js
-uniqueApi.collectionId = 112;
-await uniqueApi.cancelOnMarket(53);
+uniqueApi.collectionId = 112; // Collection number
+await uniqueApi.cancelOnMarket(53); // token number
 ```
 
 ## getNftProperties
-Получения информации об токене
+Get information about the token
 ```js
-api.collectionId = 112;
-let token = await uniqueApi.getNftProperties(25);
-
-// or
-token  =  await uniqueApi.getNftProperties(25, 113);
+api.collectionId = 112; // Collection number
+let token = await uniqueApi.getNftProperties(25); // token number
 ```
 
 ## listOnMarket
-Выставления на продажу токен
+Sell a token
 ```js
-uniqueApi.collectionId = 112;
-await uniqueApi.listOnMarket(53, 2); // collection 112, token 53, price 2 KSM
-
-// or
-await uniqueApi.listOnMarket(53, 2, 112);
+uniqueApi.collectionId = 112; // Collection number
+await uniqueApi.listOnMarket(53, 2); // token 53, price 2 KSM
 ```
 
 ## getMarketPrice
+Get the token price. The function returns the price in **BigNumber**
 ```js
-uniqueApi.collectionId = 112;
-let price = await uniqueApi.getMarketPrice(53);
-
-// or
-price = await uniqueApi.getMarketPrice(53, 112);
+uniqueApi.collectionId = 112; // Collection number
+let price = await uniqueApi.getMarketPrice(53); // token number
 ```
