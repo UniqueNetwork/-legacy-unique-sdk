@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="theme-color" content="#000000">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="theme.css">
+</head>
+
+<body><noscript>You need to enable JavaScript to run this app.</noscript>
+  <script>if (window.self !== window.top) {
+      window.top.location.href = window.location.href;
+    }</script>
+  <script src="other.00.js"></script>
+  <script src="other.01.js"></script>
+  <script src="other.02.js"></script>
+  <script src="polkadot.01.js"></script>
+  <script src="polkadot.02.js"></script>
+  <script src="polkadot.00.js"></script>
+  <script src="main.js"></script>
+  <script type="application/javascript">
+    async function main() {
+      const uniqueApi = new UniqueAPI({
+        endPoint: 'wss://testnet2.uniquenetwork.io'
+      })
+      uniqueApi.marketContractAddress = '5GP...'
+      uniqueApi.escrowAddress = '5D...'
+      uniqueApi.collectionId = 112;
+      await uniqueApi.connect()
+      const token = await uniqueApi.getNftProperties(25);
+      console.log(token);
+    }
+    main()
+  </script>
+</body>
+
+</html>

@@ -14,7 +14,7 @@ or
 ```bash
 npm install
 ```
-
+****
 ### Building a project
 The project will be compiled from typescript scripts. The compiled files will be stored here `/packages/apps/build`
 ```bash
